@@ -31,12 +31,18 @@ const [admin,reader]=await Promise.all([
 const a=await request(admin,'companies?select=id,studio_id,reference_code');
 const r=await request(reader,'companies?select=id,studio_id,reference_code');
 assert.equal(a.status,200);assert.equal(r.status,200);
-assert.ok(a.data.length>=2,'Create at least two companies for the administrator before testing');
+assert.equal(a.data.length,5,'Seed must create exactly five companies for the administrator');
 assert.equal(r.data.length,1,'Reader must be scoped to exactly one company');
 const other=a.data.find(c=>c.id!==r.data[0].id);
 assert.ok(other,'Expected an inaccessible second company');
 const otherSales=await request(reader,`sales?select=id,company_id&company_id=eq.${other.id}`);
 assert.equal(otherSales.status,200);assert.deepEqual(otherSales.data,[]);
+for(const table of ['counterparties','sale_lines']){
+  const rows=await request(reader,`${table}?select=id,company_id&company_id=eq.${other.id}`);
+  assert.equal(rows.status,200);assert.deepEqual(rows.data,[],`${table} leaks a different company`);
+}
+const anon=await fetch(`${url}/rest/v1/companies?select=id`,{headers:{apikey:env.SUPABASE_PUBLISHABLE_KEY}});
+assert.ok(anon.status>=400,'Anonymous access to companies must be denied');
 const attempt=await request(reader,'counterparties','POST',{
   company_id:other.id,reference_code:'SHOULD-NOT-WRITE',name:'Forbidden'
 });
@@ -45,10 +51,16 @@ const ownAttempt=await request(reader,'counterparties','POST',{
   company_id:r.data[0].id,reference_code:'SHOULD-NOT-WRITE',name:'Forbidden'
 });
 assert.ok(ownAttempt.status>=400,'Reader cannot write even to own company');
+const directSale=await request(admin,'sales','POST',{
+  company_id:a.data[0].id,counterparty_id:crypto.randomUUID(),request_id:crypto.randomUUID(),
+  reference:'SHOULD-NOT-WRITE',issued_on:'2026-09-25',base_amount:1,example_tax:0,total_amount:1,
+  created_by:crypto.randomUUID()
+});
+assert.ok(directSale.status>=400,'Even admin must use server-validated draft RPC');
 const rpc=await request(reader,'rpc/create_sale_draft','POST',{
   p_company:other.id,p_counterparty:'00000000-0000-0000-0000-000000000001',
   p_request:crypto.randomUUID(),p_reference:'FORBIDDEN',p_date:'2026-09-25',
   p_lines:[{description:'Forbidden',quantity:1,unit_price:1,example_tax_rate:0}]
 });
 assert.ok(rpc.status>=400,'Cross-company RPC should be denied');
-console.log('PASS: reader isolation, denied writes and denied cross-company draft');
+console.log('PASS: five-company seed, reader isolation, anonymous denial, direct write denial and RPC denial');
