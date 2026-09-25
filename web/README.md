@@ -23,7 +23,9 @@ El usuario ya utiliza sus dos proyectos Free de Supabase para Control de Gastos 
 1. Cuando se vaya a habilitar un piloto conectado, crea un **proyecto Supabase nuevo y exclusivo** para BAP Contable. No reutilices las claves o la base de BAP Legal o BAP Control de Gastos. Esta etapa queda pendiente hasta aprobar el costo correspondiente.
 2. En Supabase Auth desactiva el registro público de nuevos usuarios, confirma el correo para los invitados y configura MFA para los administradores. Crea o invita dos cuentas de prueba en **Authentication > Users** desde el panel. Activa MFA en las cuentas cuando corresponda.
 3. En **SQL Editor**, ejecuta `sql/001_pilot.sql` una sola vez en el proyecto vacío. La migración crea las tablas y políticas. No ejecutes SQL desconocido de terceros.
-4. En SQL Editor, crea el primer estudio y la empresa de prueba. Reemplaza solo el correo de la persona invitada y usa códigos ficticios:
+4. En **SQL Editor**, abre `sql/002_demo_seed.sql`, sustituye `CORREO_ADMIN_INVITADO` y `CORREO_LECTOR_INVITADO` por los correos de tus dos cuentas ficticias invitadas y ejecuta el archivo una sola vez. Crea cinco empresas, cinco terceros y asigna al administrador acceso a todas y al lector solo a `DEMO-001`. Si no encuentra a ambos usuarios, el bloque revierte todos los cambios. **No ejecutes también los INSERT manuales antiguos: el archivo ya incluye toda la preparación.**
+
+Como alternativa para preparar una sola empresa manualmente, utiliza este ejemplo en un proyecto vacío después de la migración:
 
 ```sql
 insert into public.studios(name) values ('Estudio BAP Piloto');
@@ -35,7 +37,7 @@ select u.id,s.id,null,'admin' from auth.users u cross join public.studios s
 where u.email='CORREO_ADMIN_INVITADO' and s.name='Estudio BAP Piloto';
 ```
 
-5. Para el segundo usuario, agrega una membresía **lector** limitada a la empresa, con un correo distinto:
+5. Solo si elegiste la preparación manual, agrega una membresía **lector** limitada a la empresa, con un correo distinto:
 
 ```sql
 insert into public.memberships(user_id,studio_id,company_id,role)
@@ -49,7 +51,7 @@ where u.email='CORREO_LECTOR_INVITADO';
 7. Sirve la carpeta `web` por HTTPS. Para una vista previa local ejecuta `py -m http.server 8000 --directory web` desde la raíz del repositorio y visita `http://localhost:8000`. La vista previa no sustituye HTTPS para usuarios remotos. Cloudflare Pages admite publicación estática desde `web` y aplica el archivo `_headers`; no conectes el piloto a un dominio para clientes reales antes de validar seguridad y respaldo.
 8. Registra una empresa, un tercero y una venta ficticios. Abre sesiones admin y lector en navegadores distintos. El lector solo debe ver su empresa; no debe poder crear terceros ni ventas. Repite con una segunda empresa y cambia de sesión.
 
-Para ejecutar el chequeo automatizado de aislamiento, crea **dos empresas** y dos usuarios invitados como se indica arriba. En una terminal con Node.js 20 o posterior, define `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `TEST_ADMIN_EMAIL`, `TEST_ADMIN_PASSWORD`, `TEST_READER_EMAIL` y `TEST_READER_PASSWORD` como variables de entorno **locales**, y ejecuta `node web/tests/security-smoke.mjs` desde la raíz. La prueba intenta accesos no autorizados y no debe ejecutarse con datos reales. Nunca pegues las contraseñas en GitHub o en un archivo compartido.
+Para ejecutar el chequeo automatizado de aislamiento, usa **las cinco empresas del archivo `002_demo_seed.sql`** y dos usuarios invitados como se indica arriba. En una terminal con Node.js 20 o posterior, define `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `TEST_ADMIN_EMAIL`, `TEST_ADMIN_PASSWORD`, `TEST_READER_EMAIL` y `TEST_READER_PASSWORD` como variables de entorno **locales**, y ejecuta `node web/tests/security-smoke.mjs` desde la raíz. La prueba intenta accesos no autorizados y no debe ejecutarse con datos reales. Nunca pegues las contraseñas en GitHub o en un archivo compartido.
 
 ## Costos y retención
 
