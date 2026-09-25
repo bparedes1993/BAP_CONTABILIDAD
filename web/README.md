@@ -2,6 +2,12 @@
 
 Esta carpeta contiene una **primera base web utilizable con datos de prueba**, no un sistema de facturación electrónica. El repositorio público solo aloja código. Los datos del estudio deben permanecer en un proyecto privado de base de datos con acceso autenticado. La versión de escritorio 0.3 permanece en la raíz del repositorio como referencia y no se sincroniza con esta web.
 
+## Demostración sin costo ni proyecto adicional
+
+Abre `demo.html` desde un servidor local para recorrer cinco empresas ficticias de servicios, comercio y construcción. Desde la raíz del repositorio ejecuta `py -m http.server 8000 --directory web` en Windows o `python3 -m http.server 8000 --directory web` en otros sistemas; luego visita `http://localhost:8000/demo.html`. La demostración es de **solo lectura**, funciona sin Supabase, no almacena información ni permite ingresar datos reales. Los cálculos y nombres son ilustrativos. Se puede publicar como vista pública de producto, claramente identificada como demostración.
+
+El usuario ya utiliza sus dos proyectos Free de Supabase para Control de Gastos y BAP Legal. Mantener ambos; posponer la creación del proyecto exclusivo de Contable hasta contar con presupuesto para un proyecto adicional. No ejecutar esta migración en ninguno de esos proyectos.
+
 ## Qué funciona
 
 - Acceso con cuentas invitadas; sin formulario público de registro.
@@ -14,7 +20,7 @@ Esta carpeta contiene una **primera base web utilizable con datos de prueba**, n
 
 ## Preparación segura, en orden
 
-1. Crea un **proyecto Supabase nuevo y exclusivo** para BAP Contable. No reutilices las claves o la base de BAP Legal o BAP Control de Gastos.
+1. Cuando se vaya a habilitar un piloto conectado, crea un **proyecto Supabase nuevo y exclusivo** para BAP Contable. No reutilices las claves o la base de BAP Legal o BAP Control de Gastos. Esta etapa queda pendiente hasta aprobar el costo correspondiente.
 2. En Supabase Auth desactiva el registro público de nuevos usuarios, confirma el correo para los invitados y configura MFA para los administradores. Crea o invita dos cuentas de prueba en **Authentication > Users** desde el panel. Activa MFA en las cuentas cuando corresponda.
 3. En **SQL Editor**, ejecuta `sql/001_pilot.sql` una sola vez en el proyecto vacío. La migración crea las tablas y políticas. No ejecutes SQL desconocido de terceros.
 4. En SQL Editor, crea el primer estudio y la empresa de prueba. Reemplaza solo el correo de la persona invitada y usa códigos ficticios:
