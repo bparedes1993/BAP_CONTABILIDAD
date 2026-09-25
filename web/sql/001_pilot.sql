@@ -169,11 +169,14 @@ begin
       raise exception 'Concepto inválido'; end if;
     v_qty := (item->>'quantity')::numeric; v_price := (item->>'unit_price')::numeric;
     v_rate := (item->>'example_tax_rate')::numeric;
-    if v_qty::text in ('NaN','Infinity','-Infinity') or v_price::text in ('NaN','Infinity','-Infinity')
+    if v_qty is null or v_price is null or v_rate is null
+       or v_qty::text in ('NaN','Infinity','-Infinity') or v_price::text in ('NaN','Infinity','-Infinity')
        or v_rate::text in ('NaN','Infinity','-Infinity') or v_qty<=0 or v_qty>999999999 or v_qty<>round(v_qty,3) or v_price<=0 or v_price>999999999999
        or v_price<>round(v_price,2) or v_rate not in (0,18) then raise exception 'Línea inválida'; end if;
     v_line_base:=round(v_qty*v_price,2); v_line_tax:=round(v_line_base*v_rate/100,2);
     v_base:=v_base+v_line_base; v_tax:=v_tax+v_line_tax;
+    if v_base>99999999999999.99 or v_tax>99999999999999.99 or v_base+v_tax>99999999999999.99 then
+      raise exception 'El total supera el límite permitido'; end if;
   end loop;
   insert into public.sales(company_id,counterparty_id,request_id,reference,issued_on,base_amount,example_tax,total_amount,created_by)
   values(p_company,p_counterparty,p_request,trim(p_reference),p_date,v_base,v_tax,v_base+v_tax,auth.uid()) returning id into v_sale;
