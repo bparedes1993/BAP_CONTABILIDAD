@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#102c46">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://esm.sh; style-src 'self'; connect-src 'self' https://*.supabase.co wss://*.supabase.co; img-src 'self' data:; font-src 'self'; base-uri 'none'; form-action 'self'; object-src 'none'; frame-ancestors 'none'">
+  <title>BAP Contable · Estudio</title>
+  <link rel="stylesheet" href="styles.css">
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <div class="login-wrap" id="login-wrap">
+    <section class="login-card" aria-labelledby="login-title">
+      <div class="brand"><span class="mark">B</span><span>BAP <strong>CONTABLE</strong></span></div>
+      <div class="eyebrow">ESPACIO PRIVADO DEL ESTUDIO</div>
+      <h1 id="login-title">Tu información, bajo control.</h1>
+      <p>Accede a las empresas autorizadas por el administrador de tu estudio.</p>
+      <form id="login-form">
+        <label for="email">Correo de trabajo</label><input id="email" type="email" autocomplete="username" required>
+        <label for="password">Contraseña</label><input id="password" type="password" autocomplete="current-password" required>
+        <button type="submit" class="primary full">Ingresar de forma segura</button>
+      </form>
+      <div id="login-error" role="alert" class="notice error hidden"></div>
+      <small>Acceso por invitación. Si olvidaste la contraseña, contacta al administrador del estudio.</small>
+    </section>
+    <aside class="login-aside"><div class="glow"></div><p class="overline">BAP SOLUCIONES TECNOLÓGICAS</p><h2>Una vista clara para cada empresa.</h2><p>Usuarios autorizados, borradores internos y registros separados. La emisión electrónica aún no está habilitada.</p><div class="aside-status">PILOTO PRIVADO · 2026</div></aside>
+  </div>
+  <div id="app-shell" class="shell hidden">
+    <aside class="sidebar">
+      <div class="brand"><span class="mark">B</span><span>BAP <strong>CONTABLE</strong></span></div>
+      <div class="nav-caption">ESTUDIO</div>
+      <nav aria-label="Principal">
+        <button class="nav-item active" data-page="dashboard" type="button">◫ <span>Resumen</span></button>
+        <button class="nav-item" data-page="companies" type="button">▦ <span>Empresas</span></button>
+        <button class="nav-item" data-page="parties" type="button">♧ <span>Terceros</span></button>
+        <button class="nav-item" data-page="sales" type="button">▤ <span>Ventas</span></button>
+      </nav>
+      <div class="sidebar-bottom"><span class="status-dot"></span> Piloto privado <small>Sin emisión ante SUNAT</small></div>
+    </aside>
+    <div class="main">
+      <header class="topbar"><div><div class="breadcrumb">ESPACIO DE TRABAJO / <span id="breadcrumb">RESUMEN</span></div><h1 id="page-title">Resumen del estudio</h1></div><div class="top-actions"><label class="sr-only" for="company-select">Empresa</label><select id="company-select"></select><span id="user-email" class="user-pill"></span><button id="logout" class="ghost" type="button">Salir</button></div></header>
+      <div class="content">
+        <div class="banner"><div><strong>Modo piloto</strong><p>Las ventas se guardan como borradores internos. Ningún documento se envía a SUNAT.</p></div><span>CONTROLADO</span></div>
+        <div id="feedback" role="status" class="notice hidden"></div>
+        <section id="dashboard-page" class="page">
+          <div class="section-title"><div><span class="eyebrow">VISIÓN GENERAL</span><h2>Actividad de la empresa</h2></div><span id="company-name" class="muted"></span></div>
+          <div class="metrics"><article class="metric"><span>Borradores de venta</span><strong id="metric-count">—</strong><small>Registros internos</small></article><article class="metric"><span>Total registrado</span><strong id="metric-total">—</strong><small>Incluye cálculo ilustrativo</small></article><article class="metric"><span>Terceros</span><strong id="metric-parties">—</strong><small>De la empresa seleccionada</small></article></div>
+          <div class="panel"><div class="panel-header"><div><h3>Ventas recientes</h3><p>Consulta los borradores de esta empresa.</p></div><button class="secondary" data-goto="sales" type="button">Ver ventas</button></div><div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Referencia</th><th>Tercero</th><th>Estado</th><th class="right">Total</th></tr></thead><tbody id="recent-sales"></tbody></table></div></div>
+        </section>
+        <section id="companies-page" class="page hidden"><div class="section-title"><div><span class="eyebrow">ORGANIZACIÓN</span><h2>Empresas del estudio</h2></div></div><div class="panel"><div class="panel-header"><div><h3>Empresas con acceso</h3><p>El administrador asigna los permisos de cada usuario.</p></div></div><div id="companies-list" class="company-grid"></div></div><div id="company-form-wrap" class="panel hidden"><div class="panel-header"><h3>Añadir empresa de prueba</h3></div><form id="company-form" class="form-grid"><label>Código interno<input name="reference_code" placeholder="DEMO-003" maxlength="24" required></label><label>Nombre<input name="name" placeholder="Empresa Ejemplo" maxlength="160" required></label><label>Sector<select name="sector"><option value="servicios">Servicios</option><option value="comercio">Comercio</option><option value="construccion">Construcción</option></select></label><button class="primary" type="submit">Guardar empresa</button></form></div></section>
+        <section id="parties-page" class="page hidden"><div class="section-title"><div><span class="eyebrow">CONTACTOS</span><h2>Terceros</h2></div></div><div id="party-form-wrap" class="panel hidden"><div class="panel-header"><h3>Nuevo tercero</h3></div><form id="party-form" class="form-grid"><label>Código interno<input name="reference_code" placeholder="DEMO-CLIENTE" maxlength="24" required></label><label>Nombre o razón social<input name="name" placeholder="Cliente de prueba" maxlength="160" required></label><button class="primary" type="submit">Guardar tercero</button></form></div><div class="panel"><div class="panel-header"><div><h3>Directorio</h3><p>Visible solo para usuarios autorizados en esta empresa.</p></div></div><div class="table-wrap"><table><thead><tr><th>Código</th><th>Nombre</th><th>Registrado</th></tr></thead><tbody id="parties-list"></tbody></table></div></div></section>
+        <section id="sales-page" class="page hidden"><div class="section-title"><div><span class="eyebrow">OPERACIONES</span><h2>Ventas internas</h2></div><button id="toggle-sale-form" class="primary" type="button">+ Nuevo borrador</button></div><div id="sale-form-wrap" class="panel hidden"><div class="panel-header"><div><h3>Crear borrador</h3><p>Un ejemplo de cálculo. El contador validará el tratamiento de cada operación.</p></div></div><form id="sale-form"><div class="form-grid"><label>Tercero<select name="counterparty_id" id="sale-party" required></select></label><label>Referencia interna<input name="reference" placeholder="DRAFT-001" maxlength="50" required></label><label>Fecha<input name="issued_on" id="sale-date" type="date" required></label></div><div class="line-heading">Conceptos <span>Importes expresados en soles</span></div><div id="lines"></div><button class="text-button" id="add-line" type="button">+ Añadir concepto</button><div class="form-footer"><div id="sale-preview" class="preview">Total ilustrativo: S/ 0.00</div><button class="primary" type="submit">Guardar borrador interno</button></div></form></div><div class="panel"><div class="panel-header"><div><h3>Historial de borradores</h3><p>Solo lectura; todavía no son comprobantes de pago.</p></div></div><div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Referencia</th><th>Tercero</th><th>Estado</th><th class="right">Base</th><th class="right">Total</th></tr></thead><tbody id="sales-list"></tbody></table></div></div></section>
+      </div>
+    </div>
+  </div>
+  <template id="line-template"><div class="line-row"><label>Concepto<input class="line-description" maxlength="300" placeholder="Servicio o producto" required></label><label>Cantidad<input class="line-quantity" type="number" min="0.001" max="999999999" step="0.001" value="1" required></label><label>Precio unitario<input class="line-price" type="number" min="0.01" max="999999999999" step="0.01" placeholder="0.00" required></label><label>Impuesto de ejemplo<select class="line-tax"><option value="18">18 %</option><option value="0">0 %</option></select></label><button class="remove-line" type="button" aria-label="Quitar concepto">×</button></div></template>
+</body>
+</html>

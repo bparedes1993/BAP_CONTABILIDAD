@@ -1,0 +1,3 @@
+empresa,referencia,cliente,fecha_emision,fecha_vencimiento,base,impuesto,cobrado
+DEMO-001,CSV-001,Cliente Importado Norte,2026-09-25,2026-10-20,1000.00,180.00,590.00
+DEMO-001,CSV-002,Cliente Importado Sur,2026-10-01,2026-10-25,500.00,90.00,0.00
