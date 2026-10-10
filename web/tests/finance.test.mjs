@@ -21,3 +21,7 @@ test('Invalid dates, excess payments and noninteger currency are rejected',()=>{
   assert.throws(()=>receivables([invoice('2026-10-11',1.5)],'2026-10-10'));
   assert.throws(()=>cashScenario({invoices:[],bills:[],asOf:'2026-10-10',openingCents:0,horizonDays:0}));
 });
+test('Negative opening after session payments is reported before later receipts',()=>{
+  const r=cashScenario({invoices:[invoice('2026-10-15',20000)],bills:[],asOf:'2026-10-10',openingCents:-5000});
+  assert.equal(r.firstShortfallOn,'2026-10-10');assert.equal(r.minimumCents,-5000);assert.equal(r.closingCents,15000);
+});
