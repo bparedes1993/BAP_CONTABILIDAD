@@ -1,5 +1,6 @@
-// Public, read-only demonstration. All records are invented and kept in memory.
+// Public demonstration. All records are fictitious and kept only in memory.
 import { receivables, cashScenario } from './finance.mjs';
+import { previewSalesCSV, MAX_CSV_BYTES } from './import-sales.mjs';
 const companies = [
   {code:'DEMO-001',name:'Andes Consultores Demo',sector:'SERVICIOS',party:'Cliente Ejemplo Norte',reference:'INT-S-001',description:'Asesoría mensual',base:1000,tax:180},
   {code:'DEMO-002',name:'Mercado Central Demo',sector:'COMERCIO',party:'Comprador Ejemplo Sur',reference:'INT-C-001',description:'Venta de artículos',base:750,tax:135},
@@ -8,17 +9,38 @@ const companies = [
   {code:'DEMO-005',name:'Comercial Horizonte Demo',sector:'COMERCIO',party:'Comprador Referencial',reference:'INT-C-002',description:'Suministros',base:1200,tax:216}
 ];
 let selected=0;
+const records=new Map();
+let batch=null,readVersion=0;
 const $=id=>document.getElementById(id);
 const money=n=>`S/ ${n.toLocaleString('es-PE',{minimumFractionDigits:2})}`;
 const addRow=(target,values)=>{const row=document.createElement('tr');for(const value of values){const td=document.createElement('td');td.textContent=value;row.append(td);}target.append(row);};
 const AS_OF='2026-10-10';
 function sampleInvoices(c){
+  if(records.has(c.code))return records.get(c.code);
   const amount=Math.round((c.base+c.tax)*100);
-  return [
+  const initial=[
     {reference:`${c.reference}-A`,issuedOn:'2026-08-01',dueOn:'2026-09-01',totalCents:amount,paidCents:Math.round(amount/2)},
     {reference:`${c.reference}-B`,issuedOn:'2026-09-25',dueOn:'2026-10-15',totalCents:amount*2,paidCents:0},
     {reference:`${c.reference}-C`,issuedOn:'2026-09-25',dueOn:'2026-10-05',totalCents:amount,paidCents:amount}
-  ];
+  ].map((row,i)=>({...row,client:c.party,baseCents:Math.round(c.base*100)*(i===1?2:1),taxCents:Math.round(c.tax*100)*(i===1?2:1)}));
+  records.set(c.code,initial);return initial;
+}
+function clearBatch(){batch=null;readVersion++;$('import-confirm').disabled=true;$('import-file').value='';$('import-preview').replaceChildren();$('import-summary').textContent='Selecciona un CSV ficticio o carga el ejemplo.';}
+function preview(text){
+  batch=null;$('import-confirm').disabled=true;$('import-preview').replaceChildren();
+  try{
+    const c=companies[selected];
+    const result=previewSalesCSV(text,{companyCode:c.code,existing:sampleInvoices(c),asOf:AS_OF});
+    result.rows.forEach(row=>addRow($('import-preview'),[String(row.line),row.record?.reference||'—',row.record?.client||'—',row.record?money(row.record.totalCents/100):'—',row.status,row.message]));
+    $('import-summary').textContent=result.blocked?'Corrige los errores y conflictos; no se aplicará ninguna fila del lote.':`${result.accepted.length} registros nuevos · ${result.duplicates} duplicados que se omitirán.`;
+    if(!result.blocked&&result.accepted.length){batch={text,company:c.code};$('import-confirm').disabled=false;}
+  }catch(error){$('import-summary').textContent=error.message;}
+}
+async function readImport(loader){
+  const version=++readVersion,c=companies[selected].code;
+  batch=null;$('import-confirm').disabled=true;$('import-preview').replaceChildren();$('import-summary').textContent='Leyendo el archivo…';
+  try{const text=await loader();if(version===readVersion&&c===companies[selected].code)preview(text);}
+  catch(error){if(version===readVersion)$('import-summary').textContent=error.message;}
 }
 function drawFinance(){
   const c=companies[selected],invoices=sampleInvoices(c);
@@ -48,36 +70,53 @@ function draw(){
   $('company-select').value=String(selected);
   $('company-name').textContent=c.name;
   const invoices=sampleInvoices(c);
-  $('metric-count').textContent=String(invoices.length);$('metric-total').textContent=money(invoices.reduce((sum,row)=>sum+row.totalCents,0)/100);$('metric-parties').textContent='1';
+  const parties=[...new Set(invoices.map(row=>row.client))];
+  $('metric-count').textContent=String(invoices.length);$('metric-total').textContent=money(invoices.reduce((sum,row)=>sum+row.totalCents,0)/100);$('metric-parties').textContent=String(parties.length);
   $('recent-sales').replaceChildren();$('sales-list').replaceChildren();
-  invoices.forEach((invoice,i)=>{
+  invoices.forEach(invoice=>{
     const total=invoice.totalCents/100;
-    const sale=[invoice.issuedOn,invoice.reference,c.party,'BORRADOR INTERNO',money(total)];
-    addRow($('recent-sales'),sale);addRow($('sales-list'),[...sale.slice(0,4),money(c.base*(i===1?2:1)),sale[4]]);
+    const sale=[invoice.issuedOn,invoice.reference,invoice.client,'BORRADOR INTERNO',money(total)];
+    addRow($('recent-sales'),sale);addRow($('sales-list'),[...sale.slice(0,4),money(invoice.baseCents/100),sale[4]]);
   });
-  $('parties-list').replaceChildren();addRow($('parties-list'),['CLIENTE-DEMO',c.party,'25/09/2026']);
+  $('parties-list').replaceChildren();parties.forEach((party,i)=>addRow($('parties-list'),[`CLIENTE-${i+1}`,party,AS_OF]));
   const list=$('companies-list');list.replaceChildren();
   companies.forEach((item,i)=>{
     const button=document.createElement('button');button.type='button';button.className=`company-card ${i===selected?'selected':''}`;
     for(const [tag,value] of [['small',item.sector],['strong',item.name],['span',item.code]]){
       const part=document.createElement(tag);part.textContent=value;button.append(part);
     }
-    button.addEventListener('click',()=>{selected=i;draw();});list.append(button);
+    button.addEventListener('click',()=>{selected=i;clearBatch();draw();});list.append(button);
   });
   drawFinance();
 }
 function show(page){
-  const titles={dashboard:'Resumen del estudio',companies:'Empresas',parties:'Terceros',sales:'Ventas internas',finance:'Cobranzas y caja'};
+  const titles={dashboard:'Resumen del estudio',companies:'Empresas',parties:'Terceros',sales:'Ventas internas',finance:'Cobranzas y caja',imports:'Importar ventas'};
   $('page-title').textContent=titles[page];$('breadcrumb').textContent=titles[page].toUpperCase();
   document.querySelectorAll('.page').forEach(el=>el.classList.toggle('hidden',el.id!==`${page}-page`));
   document.querySelectorAll('.nav-item').forEach(el=>el.classList.toggle('active',el.dataset.page===page));
 }
 const picker=$('company-select');
 companies.forEach((c,i)=>{const option=document.createElement('option');option.value=String(i);option.textContent=`${c.code} · ${c.name}`;picker.append(option);});
-picker.addEventListener('change',()=>{selected=Number(picker.value);draw();});
+picker.addEventListener('change',()=>{selected=Number(picker.value);clearBatch();draw();});
 document.querySelectorAll('.nav-item').forEach(button=>button.addEventListener('click',()=>show(button.dataset.page)));
 document.querySelectorAll('[data-goto]').forEach(button=>button.addEventListener('click',()=>show(button.dataset.goto)));
 $('scenario-opening').addEventListener('input',drawFinance);
 $('scenario-horizon').addEventListener('change',drawFinance);
+$('import-file').addEventListener('change',event=>{
+  const file=event.target.files[0];if(!file){clearBatch();return;}
+  readImport(()=>{if(file.size>MAX_CSV_BYTES)throw new Error('El CSV supera 1 MB');return file.text();});
+});
+$('import-example').addEventListener('click',()=>{
+  const company=companies[selected].code;
+  readImport(async()=>{const response=await fetch('./examples/ventas-demo.csv');if(!response.ok)throw new Error('No se pudo cargar el ejemplo');return (await response.text()).replaceAll('DEMO-001',company);});
+});
+$('import-confirm').addEventListener('click',()=>{
+  if(!batch||batch.company!==companies[selected].code)return;
+  const c=companies[selected],result=previewSalesCSV(batch.text,{companyCode:c.code,existing:sampleInvoices(c),asOf:AS_OF});
+  if(result.blocked){preview(batch.text);return;}
+  const count=result.accepted.length;records.set(c.code,[...sampleInvoices(c),...result.accepted]);clearBatch();draw();
+  $('import-summary').textContent=`${count} registros de prueba aplicados. Resumen y cobranzas actualizados; se perderán al recargar.`;
+});
+$('import-reset').addEventListener('click',()=>{records.delete(companies[selected].code);clearBatch();draw();$('import-summary').textContent='La empresa seleccionada volvió a sus registros iniciales.';});
 draw();show('dashboard');
 
