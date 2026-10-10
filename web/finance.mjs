@@ -34,7 +34,8 @@ export function receivables(invoices, asOf) {
     overdueCents: add(add(aging.days1to30, aging.days31to60), aging.days61plus) };
 }
 export function cashScenario({ invoices, bills, asOf, openingCents, horizonDays = 30 }) {
-  const today = day(asOf); cents(openingCents);
+  const today = day(asOf);
+  if(!Number.isSafeInteger(openingCents))throw new Error('Caja inicial inválida');
   if (!Number.isInteger(horizonDays) || horizonDays < 1 || horizonDays > 90) throw new Error('Horizonte inválido');
   const portfolio = receivables(invoices, asOf);
   const scheduled = new Map(); let excludedOverdueCents = 0;
@@ -56,7 +57,7 @@ export function cashScenario({ invoices, bills, asOf, openingCents, horizonDays 
     schedule(due, 0, bill.amountCents);
   }
   let balanceCents = openingCents, minimumCents = openingCents, inflowCents = 0, outflowCents = 0;
-  let firstShortfallOn = null;
+  let firstShortfallOn = openingCents < 0 ? asOf : null;
   const daily = [];
   for (let offset = 0; offset <= horizonDays; offset++) {
     const entry = scheduled.get(offset) || { inflowCents: 0, outflowCents: 0 };
