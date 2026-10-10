@@ -5,5 +5,10 @@
 .finance-actions li{padding:16px 18px;border-radius:10px;background:#f0f7fa;border-left:3px solid #2696a0;line-height:1.6;color:#36566d}
 #finance-feedback:empty{display:none}
 #finance-feedback{color:#a34d3f}
+.import-tools{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:18px 0 0}
+.import-tools label{display:grid;gap:8px;font-size:12px;font-weight:650;color:#596f80}
+.import-tools input{max-width:100%}
+.import-tools a{text-decoration:none}
+.import-tools button:disabled{cursor:not-allowed}
 @media(max-width:1200px){.finance-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:700px){.finance-metrics{grid-template-columns:1fr}}
