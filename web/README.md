@@ -8,6 +8,12 @@ Abre `demo.html` desde un servidor local para recorrer cinco empresas ficticias 
 
 El usuario ya utiliza sus dos proyectos Free de Supabase para Control de Gastos y BAP Legal. Mantener ambos; posponer la creación del proyecto exclusivo de Contable hasta contar con presupuesto para un proyecto adicional. No ejecutar esta migración en ninguno de esos proyectos.
 
+## Cobranzas y caja de demostración
+
+`demo.html` añade la sección **Cobranzas y caja**. Calcula saldo pendiente, vencidos y antigüedad tras cobros parciales ficticios; permite variar caja inicial y horizonte. El corte del ejemplo es 10/10/2026. No cuenta cobros vencidos como entradas futuras, carga pagos vencidos al inicio y detecta faltantes diarios aunque el cierre sea positivo. El saldo inicial incluye cobros anteriores. Las proyecciones suponen cobros futuros en fecha y no los garantizan.
+
+Los borradores, cobros y compromisos de esta sección son simulados, no datos del piloto conectado. No hay mensajes automáticos, conciliación bancaria ni registros de pagos reales. El cálculo puro está en `finance.mjs`; sus pruebas se ejecutan con `node --test web/tests/finance.test.mjs`. La ruta comercial y de automatización está en `docs/EVOLUCION_CONTABLE.md` en la raíz del repositorio.
+
 ## Qué funciona
 
 - Acceso con cuentas invitadas; sin formulario público de registro.
@@ -66,3 +72,4 @@ El plan Free de Supabase sirve para **pruebas con datos ficticios**: puede pausa
 - Integración SUNAT posterior con certificado por emisor almacenado del lado servidor, flujo XML/firma/envío/CDR y validación de contador. Nunca desde el navegador.
 
 Documentación: https://supabase.com/docs/guides/database/postgres/row-level-security · https://supabase.com/pricing · https://developers.cloudflare.com/pages/configuration/headers/ · https://cpe.sunat.gob.pe/guias-y-manuales
+
