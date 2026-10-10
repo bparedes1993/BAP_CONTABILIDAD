@@ -4,11 +4,21 @@ Esta carpeta contiene una **primera base web utilizable con datos de prueba**, n
 
 ## Demostración sin costo ni proyecto adicional
 
-Abre `demo.html` desde un servidor local para recorrer cinco empresas ficticias de servicios, comercio y construcción. Desde la raíz del repositorio ejecuta `py -m http.server 8000 --directory web` en Windows o `python3 -m http.server 8000 --directory web` en otros sistemas; luego visita `http://localhost:8000/demo.html`. La demostración es de **solo lectura**, funciona sin Supabase, no almacena información ni permite ingresar datos reales. Los cálculos y nombres son ilustrativos. Se puede publicar como vista pública de producto, claramente identificada como demostración.
+Abre `demo.html` desde un servidor local para recorrer cinco empresas ficticias de servicios, comercio y construcción. Desde la raíz del repositorio ejecuta `py -m http.server 8000 --directory web` en Windows o `python3 -m http.server 8000 --directory web` en otros sistemas; luego visita `http://localhost:8000/demo.html`. La demostración funciona sin Supabase y admite importaciones de prueba en memoria. No guarda datos de forma persistente; usar exclusivamente información ficticia. Los cálculos y nombres son ilustrativos. Se puede publicar como vista pública de producto, claramente identificada como demostración.
 
 El usuario ya utiliza sus dos proyectos Free de Supabase para Control de Gastos y BAP Legal. Mantener ambos; posponer la creación del proyecto exclusivo de Contable hasta contar con presupuesto para un proyecto adicional. No ejecutar esta migración en ninguno de esos proyectos.
 
 ## Cobranzas y caja de demostración
+
+### Importación CSV en memoria
+
+La sección **Importar ventas** permite cargar el ejemplo para cualquier empresa, previsualizar filas y confirmar un lote ficticio. Soporta coma o punto y coma, BOM UTF-8 y campos entre comillas. Usa columnas `empresa,referencia,cliente,fecha_emision,fecha_vencimiento,base,impuesto,cobrado`, fechas AAAA-MM-DD e importes sin miles con hasta dos decimales. `impuesto` es un importe, no una tasa. Límite: 1 MB y 500 filas por archivo.
+
+Duplicados iguales se omiten; datos diferentes bajo la misma referencia generan conflicto. Si hay errores o conflictos se bloquea todo el lote. Una empresa diferente a la seleccionada se rechaza. La referencia se normaliza a mayúsculas; no se sobrescriben registros. Al aplicar, resumen, directorio y cobranzas se actualizan. Cambiar de empresa cancela la vista previa; lecturas de archivos que terminan después de cambiar empresa se descartan.
+
+Solo se usa memoria del navegador: al recargar se pierden los registros importados. El botón Restablecer vuelve a los registros iniciales de la empresa seleccionada. No se transmiten archivos a servidores ni se integra esta importación con Supabase. La plantilla descargable corresponde a DEMO-001; el botón Cargar ejemplo adapta el código a la empresa seleccionada. Usar solo datos ficticios. El período de corte permanece fijo en 10/10/2026.
+
+Pruebas: `node --test web/tests/finance.test.mjs web/tests/import-sales.test.mjs`. La persistencia, validaciones servidor, auditoría de importaciones, permisos y concurrencia se implementarán antes del uso real. XLSX y compras quedan pendientes.
 
 `demo.html` añade la sección **Cobranzas y caja**. Calcula saldo pendiente, vencidos y antigüedad tras cobros parciales ficticios; permite variar caja inicial y horizonte. El corte del ejemplo es 10/10/2026. No cuenta cobros vencidos como entradas futuras, carga pagos vencidos al inicio y detecta faltantes diarios aunque el cierre sea positivo. El saldo inicial incluye cobros anteriores. Las proyecciones suponen cobros futuros en fecha y no los garantizan.
 
