@@ -32,13 +32,25 @@ Los borradores, cobros y compromisos de esta sección son simulados, no datos de
 - Terceros, borradores de venta de varias líneas, consulta de importes y panel por empresa.
 - Cálculo de venta y verificación de permisos en la base de datos. Ningún cliente puede escribir importes totales directamente.
 
-**No hay conexión con SUNAT ni CDR, boleta, factura, nota, compras, asientos, SIRE, archivos adjuntos o copias operativas automatizadas en este piloto.** La tasa 18% es solo un cálculo de prueba elegible para un concepto; un contador debe definir tratamientos reales antes de implementarlos.
+**No hay conexión con SUNAT ni CDR, boleta, factura, nota, asientos, SIRE, archivos adjuntos o copias operativas automatizadas en este piloto.** La tasa 18% es solo un cálculo de prueba elegible para un concepto; un contador debe definir tratamientos reales antes de implementarlos. Compras, cobros y pagos se prueban en la demostración en memoria; la interfaz conectada aún no incorpora esos módulos.
+
+## Compras, cobros y pagos con validaciones
+
+En `demo.html`, abre **Compras y pagos**: registra una compra ficticia con base e impuesto expresados en soles; luego aplica un cobro o pago parcial. Solo admite importes positivos con hasta dos decimales, fechas no posteriores al corte y movimientos no anteriores al documento. Un importe superior al saldo se rechaza. Los reversos requieren motivo y conservan el original; solo se revierten movimientos de esta sesión. Cambiar empresa reinicia formularios. Todo se pierde al recargar.
+
+El escenario de caja suma los cobros y resta los pagos registrados en esta sesión sobre la caja base. Los cobros/pagos históricos del ejemplo o CSV ya deben estar incluidos en esa caja base. Los movimientos nuevos reducen el saldo que se proyectará en el futuro; no se cuentan dos veces. Puede mostrar caja negativa: es una alerta de prueba, no una autorización bancaria.
+
+`sql/003_purchases_settlements.sql` prepara compras y movimientos en PostgreSQL: escrituras solo por RPC, claves compuestas por empresa, saldos bajo bloqueo de fila, reintentos con clave única y comparación de datos, reversos auditados y membresía activa. Para cobros, pagos y reversos exige rol admin/contador **y sesión MFA AAL2**. El auxiliar puede preparar borradores pero no registrar dinero. La interfaz para enrolar/verificar MFA del aplicativo sigue pendiente; configurar MFA del panel Supabase no la sustituye.
+
+Las migraciones 001/003 se ejecutaron en PostgreSQL WASM (PGlite) con Auth simulado, incluyendo pruebas de RLS. Eso no equivale a pruebas en Supabase real, PostgREST, JWT reales, restauración o sesiones simultáneas. No se conecta la demo a esas RPC ni se usa una service key para probar.
+
+Para ejecutar validaciones desde la carpeta `web`: `npm ci`, luego `npm test`. Para el navegador: `npx playwright install chromium` y `npm run test:ui`. Node.js 20 o posterior. La prueba UI usa un servidor localhost temporal y solo datos ficticios. Un Chromium ya instalado puede indicarse mediante `CHROMIUM_EXECUTABLE_PATH`.
 
 ## Preparación segura, en orden
 
 1. Cuando se vaya a habilitar un piloto conectado, crea un **proyecto Supabase nuevo y exclusivo** para BAP Contable. No reutilices las claves o la base de BAP Legal o BAP Control de Gastos. Esta etapa queda pendiente hasta aprobar el costo correspondiente.
-2. En Supabase Auth desactiva el registro público de nuevos usuarios, confirma el correo para los invitados y configura MFA para los administradores. Crea o invita dos cuentas de prueba en **Authentication > Users** desde el panel. Activa MFA en las cuentas cuando corresponda.
-3. En **SQL Editor**, ejecuta `sql/001_pilot.sql` una sola vez en el proyecto vacío. La migración crea las tablas y políticas. No ejecutes SQL desconocido de terceros.
+2. En Supabase Auth desactiva el registro público y confirma el correo de los invitados. Crea o invita dos cuentas de prueba en **Authentication > Users**. Activa 2FA en la cuenta administradora del panel Supabase. Los usuarios del aplicativo necesitarán un flujo de enrolamiento/verificación MFA propio antes de utilizar dinero, aún pendiente de interfaz y prueba real.
+3. En **SQL Editor**, ejecuta `sql/001_pilot.sql` una sola vez en el proyecto vacío y después `sql/003_purchases_settlements.sql`. Esta revisión de 001 incluye payload de solicitud y normalización de referencia; **no es una actualización para un proyecto que haya ejecutado una versión antigua de 001**. Si ya existe un piloto antiguo, preparar una migración de actualización después de inspeccionarlo; no borrar datos ni volver a ejecutar estas migraciones. No ejecutes SQL desconocido de terceros.
 4. En **SQL Editor**, abre `sql/002_demo_seed.sql`, sustituye `CORREO_ADMIN_INVITADO` y `CORREO_LECTOR_INVITADO` por los correos de tus dos cuentas ficticias invitadas y ejecuta el archivo una sola vez. Crea cinco empresas, cinco terceros y asigna al administrador acceso a todas y al lector solo a `DEMO-001`. Si no encuentra a ambos usuarios, el bloque revierte todos los cambios. **No ejecutes también los INSERT manuales antiguos: el archivo ya incluye toda la preparación.**
 
 Como alternativa para preparar una sola empresa manualmente, utiliza este ejemplo en un proyecto vacío después de la migración:
