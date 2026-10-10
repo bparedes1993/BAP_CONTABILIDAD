@@ -4,9 +4,9 @@ Revisión: 10/10/2026. Alcance: un estudio, cinco empresas de servicios, comerci
 
 ## Estado verificable
 
-La demostración incorpora importación CSV de ventas en memoria con vista previa, detección de duplicados, bloqueo de conflictos y actualización del panel. XLSX, compras y persistencia quedan pendientes. También tiene cobranzas y escenario de caja con saldos ficticios, cobros parciales, antigüedad y alertas por reglas transparentes. Los documentos son borradores internos; los cobros y pagos son simulados. Los cálculos usan centavos enteros y fechas UTC. No guarda información real ni representa contabilidad oficial. Navegación visual completa pendiente de revisión en navegador.
+La demostración incorpora importación CSV de ventas en memoria con vista previa, detección de duplicados, bloqueo de conflictos y actualización del panel. XLSX y persistencia quedan pendientes; compras, cobros/pagos y reversos ya se demuestran en memoria. También tiene cobranzas y escenario de caja con saldos ficticios, cobros parciales, antigüedad y alertas por reglas transparentes. Los documentos son borradores internos; los cobros y pagos son simulados. Los cálculos usan centavos enteros y fechas UTC. No guarda información real ni representa contabilidad oficial. Recorridos principales revisados en Chromium, en computadora y tamaño móvil.
 
-El piloto conectado tiene tablas, roles, permisos por empresa y auditoría de altas preparados. Sigue pendiente ejecutar el SQL en una base exclusiva y probar aislamiento, revocación, concurrencia y restauración. No ejecutar migraciones de Contable en proyectos de otros productos. Confirmar disponibilidad y presupuesto antes de conectar.
+El piloto conectado tiene tablas, roles, permisos por empresa y auditoría de altas preparados. Las migraciones 001/003 y controles de aislamiento/revocación pasaron en PostgreSQL WASM local con Auth simulado. Sigue pendiente ejecutarlos en una base exclusiva, con Auth real, concurrencia y restauración. No ejecutar migraciones de Contable en proyectos de otros productos. Confirmar disponibilidad y presupuesto antes de conectar.
 
 ## Prioridades y criterios de aceptación
 
@@ -53,9 +53,9 @@ Medir diez operaciones antes/después: tiempo de digitación, errores detectados
 
 ## Hitos
 
-1. Demostración financiera y pruebas de cálculo: implementadas en esta propuesta; revisión visual pendiente.
+1. Demostración financiera, compras, movimientos y pruebas de cálculo/navegación: implementadas y verificadas localmente.
 2. Base exclusiva, aislamiento de todos los roles, revocación y restauración: pendientes.
-3. Importación CSV de ventas demostrable; persistencia segura, XLSX, compras, cobros/pagos y conciliación con concurrencia: pendientes.
+3. Importación CSV, compras, cobros/pagos y reversos demostrables; RPC de compras/movimientos validadas localmente. Persistencia integrada, XLSX, conciliación y concurrencia real: pendientes.
 4. Cierre y contabilidad con revisión profesional, contrato/privacidad/soporte: pendientes.
 5. CPE/SIRE con certificados por emisor, entornos aplicables y pruebas de aceptación/rechazo: pendientes.
 
