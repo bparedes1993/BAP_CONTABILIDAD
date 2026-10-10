@@ -1,5 +1,6 @@
 -- BAP Contable pilot. Execute once in a NEW Supabase project.
 -- No CPE emission. All sales remain internal drafts.
+begin;
 create table public.studios (
   id uuid primary key default gen_random_uuid(),
   name text not null check (length(trim(name)) between 2 and 120),
@@ -38,6 +39,7 @@ create table public.sales (
   company_id uuid not null references public.companies(id),
   counterparty_id uuid not null,
   request_id uuid not null,
+  request_payload jsonb not null,
   reference text not null check (length(trim(reference)) between 2 and 50),
   issued_on date not null,
   status text not null default 'BORRADOR INTERNO' check (status = 'BORRADOR INTERNO'),
@@ -143,7 +145,7 @@ for each row execute function public.record_audit_event();
 create trigger audit_sale_created after insert on public.sales
 for each row execute function public.record_audit_event();
 -- No client insert/update/delete on sales or lines. The RPC validates and calculates on the server.
-revoke all on public.studios,public.companies,public.memberships,public.counterparties,public.sales,public.sale_lines,public.audit_events from anon;
+revoke all on public.studios,public.companies,public.memberships,public.counterparties,public.sales,public.sale_lines,public.audit_events from public,anon;
 revoke all on public.studios,public.companies,public.memberships,public.counterparties,public.sales,public.sale_lines,public.audit_events from authenticated;
 grant select on public.studios,public.companies,public.memberships,public.counterparties,public.sales,public.sale_lines,public.audit_events to authenticated;
 grant insert on public.companies,public.counterparties to authenticated;
@@ -154,15 +156,14 @@ create function public.create_sale_draft(
 declare
   item jsonb; v_sale uuid; v_base numeric(16,2):=0; v_tax numeric(16,2):=0;
   v_qty numeric; v_price numeric; v_rate numeric; v_line_base numeric; v_line_tax numeric;
+  v_payload jsonb; v_existing_payload jsonb;
 begin
   if not public.can_write_company(p_company) then raise exception 'Acceso denegado'; end if;
   if not exists(select 1 from public.counterparties where id=p_counterparty and company_id=p_company) then
     raise exception 'Tercero no pertenece a la empresa'; end if;
-  if p_request is null or p_date is null or length(trim(coalesce(p_reference,''))) not between 2 and 50
+  if p_request is null or p_date is null or p_date>(now() at time zone 'America/Lima')::date or length(trim(coalesce(p_reference,''))) not between 2 and 50
       or p_lines is null or jsonb_typeof(p_lines) <> 'array' or jsonb_array_length(p_lines) not between 1 and 50 then
     raise exception 'Borrador incompleto'; end if;
-  select id into v_sale from public.sales where company_id=p_company and request_id=p_request;
-  if v_sale is not null then return v_sale; end if;
   -- Validate all lines before reserving the reference; the function executes in one transaction.
   for item in select value from jsonb_array_elements(p_lines) loop
     if jsonb_typeof(item)<>'object' or length(trim(coalesce(item->>'description',''))) not between 2 and 300 then
@@ -174,12 +175,20 @@ begin
        or v_rate::text in ('NaN','Infinity','-Infinity') or v_qty<=0 or v_qty>999999999 or v_qty<>round(v_qty,3) or v_price<=0 or v_price>999999999999
        or v_price<>round(v_price,2) or v_rate not in (0,18) then raise exception 'Línea inválida'; end if;
     v_line_base:=round(v_qty*v_price,2); v_line_tax:=round(v_line_base*v_rate/100,2);
+    if v_line_base<=0 then raise exception 'El concepto debe tener una base positiva'; end if;
     v_base:=v_base+v_line_base; v_tax:=v_tax+v_line_tax;
     if v_base>99999999999999.99 or v_tax>99999999999999.99 or v_base+v_tax>99999999999999.99 then
       raise exception 'El total supera el límite permitido'; end if;
   end loop;
-  insert into public.sales(company_id,counterparty_id,request_id,reference,issued_on,base_amount,example_tax,total_amount,created_by)
-  values(p_company,p_counterparty,p_request,trim(p_reference),p_date,v_base,v_tax,v_base+v_tax,auth.uid()) returning id into v_sale;
+  v_payload:=jsonb_build_object('counterparty',p_counterparty,'reference',upper(trim(p_reference)),'date',p_date,'lines',p_lines);
+  perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(p_company::text||p_request::text,0));
+  select id,request_payload into v_sale,v_existing_payload from public.sales where company_id=p_company and request_id=p_request;
+  if v_sale is not null then
+    if v_existing_payload is distinct from v_payload then raise exception 'Solicitud repetida con datos diferentes'; end if;
+    return v_sale;
+  end if;
+  insert into public.sales(company_id,counterparty_id,request_id,request_payload,reference,issued_on,base_amount,example_tax,total_amount,created_by)
+  values(p_company,p_counterparty,p_request,v_payload,upper(trim(p_reference)),p_date,v_base,v_tax,v_base+v_tax,auth.uid()) returning id into v_sale;
   for item in select value from jsonb_array_elements(p_lines) loop
     v_qty:=(item->>'quantity')::numeric;v_price:=(item->>'unit_price')::numeric;v_rate:=(item->>'example_tax_rate')::numeric;
     v_line_base:=round(v_qty*v_price,2);v_line_tax:=round(v_line_base*v_rate/100,2);
@@ -191,3 +200,5 @@ end;
 $$;
 revoke all on function public.create_sale_draft(uuid,uuid,uuid,text,date,jsonb) from public,anon;
 grant execute on function public.create_sale_draft(uuid,uuid,uuid,text,date,jsonb) to authenticated;
+commit;
+
