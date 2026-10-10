@@ -21,13 +21,14 @@
         <button class="nav-item" data-page="parties" type="button">♧ <span>Terceros</span></button>
         <button class="nav-item" data-page="sales" type="button">▤ <span>Ventas</span></button>
         <button class="nav-item" data-page="finance" type="button">◈ <span>Cobranzas y caja</span></button>
+        <button class="nav-item" data-page="imports" type="button">⇧ <span>Importar ventas</span></button>
       </nav>
       <div class="sidebar-bottom"><span class="status-dot"></span> Piloto privado <small>Sin emisión ante SUNAT</small></div>
     </aside>
     <div class="main">
       <header class="topbar"><div><div class="breadcrumb">ESPACIO DE TRABAJO / <span id="breadcrumb">RESUMEN</span></div><h1 id="page-title">Resumen del estudio</h1></div><div class="top-actions"><label class="sr-only" for="company-select">Empresa</label><select id="company-select"></select><span id="user-email" class="user-pill">DEMO</span><a class="ghost" href="index.html">Acceso privado</a></div></header>
       <div class="content">
-        <div class="banner"><div><strong>Demostración con datos inventados</strong><p>Solo lectura, sin cuentas ni base de datos. No ingreses información real. No se emite ningún documento a SUNAT.</p></div><span>DEMO</span></div>
+        <div class="banner"><div><strong>Demostración con datos inventados</strong><p>Pruebas con datos ficticios en memoria; se borran al recargar. No ingreses información real. Sin emisión ante SUNAT.</p></div><span>DEMO</span></div>
         <div id="feedback" role="status" class="notice hidden"></div>
         <section id="dashboard-page" class="page">
           <div class="section-title"><div><span class="eyebrow">VISIÓN GENERAL</span><h2>Actividad de la empresa</h2></div><span id="company-name" class="muted"></span></div>
@@ -38,6 +39,16 @@
         <section id="parties-page" class="page hidden"><div class="section-title"><div><span class="eyebrow">CONTACTOS</span><h2>Terceros</h2></div></div><div id="party-form-wrap" class="panel hidden"><div class="panel-header"><h3>Nuevo tercero</h3></div><form id="party-form" class="form-grid"><label>Código interno<input name="reference_code" placeholder="DEMO-CLIENTE" maxlength="24" required></label><label>Nombre o razón social<input name="name" placeholder="Cliente de prueba" maxlength="160" required></label><button class="primary" type="submit">Guardar tercero</button></form></div><div class="panel"><div class="panel-header"><div><h3>Directorio</h3><p>Visible solo para usuarios autorizados en esta empresa.</p></div></div><div class="table-wrap"><table><thead><tr><th>Código</th><th>Nombre</th><th>Registrado</th></tr></thead><tbody id="parties-list"></tbody></table></div></div></section>
         <section id="sales-page" class="page hidden"><div class="section-title"><div><span class="eyebrow">OPERACIONES</span><h2>Ventas internas</h2></div></div><div id="sale-form-wrap" class="panel hidden"><div class="panel-header"><div><h3>Crear borrador</h3><p>Un ejemplo de cálculo. El contador validará el tratamiento de cada operación.</p></div></div><form id="sale-form"><div class="form-grid"><label>Tercero<select name="counterparty_id" id="sale-party" required></select></label><label>Referencia interna<input name="reference" placeholder="DRAFT-001" maxlength="50" required></label><label>Fecha<input name="issued_on" id="sale-date" type="date" required></label></div><div class="line-heading">Conceptos <span>Importes expresados en soles</span></div><div id="lines"></div><button class="text-button" id="add-line" type="button">+ Añadir concepto</button><div class="form-footer"><div id="sale-preview" class="preview">Total ilustrativo: S/ 0.00</div><button class="primary" type="submit">Guardar borrador interno</button></div></form></div><div class="panel"><div class="panel-header"><div><h3>Historial de borradores</h3><p>Solo lectura; todavía no son comprobantes de pago.</p></div></div><div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Referencia</th><th>Tercero</th><th>Estado</th><th class="right">Base</th><th class="right">Total</th></tr></thead><tbody id="sales-list"></tbody></table></div></div></section>
 
+
+        <section id="imports-page" class="page hidden">
+          <div class="section-title"><div><span class="eyebrow">MENOS DIGITACIÓN</span><h2>Importar ventas de prueba</h2></div><span class="muted">Vista previa antes de aplicar</span></div>
+          <div class="panel"><div class="panel-header"><div><h3>Revisa y confirma tu lote</h3><p>Selecciona primero la empresa. Solo admite CSV ficticios de hasta 1 MB y 500 filas, con fechas de emisión hasta el 10/10/2026.</p></div></div>
+            <p>Columnas: empresa, referencia, cliente, fecha_emision, fecha_vencimiento, base, impuesto, cobrado. Fechas AAAA-MM-DD; importes en soles sin separador de miles. El impuesto del archivo es un importe, no una tasa.</p>
+            <div class="import-tools"><label for="import-file">Archivo CSV ficticio<input id="import-file" type="file" accept=".csv,text/csv"></label><button id="import-example" type="button" class="secondary">Cargar ejemplo</button><a class="ghost" href="examples/ventas-demo.csv" download>Descargar plantilla DEMO-001</a></div>
+            <p>El ejemplo se adapta a la empresa seleccionada. Los duplicados iguales se omiten; una referencia con datos distintos bloquea el lote. No se sobrescriben registros.</p>
+          </div>
+          <div class="panel"><div class="panel-header"><h3>Vista previa</h3></div><p id="import-summary" role="status">Selecciona un CSV ficticio o carga el ejemplo.</p><div class="table-wrap"><table><thead><tr><th>Línea</th><th>Referencia</th><th>Cliente</th><th>Total</th><th>Estado</th><th>Resultado</th></tr></thead><tbody id="import-preview"></tbody></table></div><div class="import-tools"><button id="import-confirm" class="primary" type="button" disabled>Aplicar lote de prueba</button><button id="import-reset" class="secondary" type="button">Restablecer empresa de ejemplo</button></div></div>
+        </section>
         <section id="finance-page" class="page hidden">
           <div class="section-title"><div><span class="eyebrow">CONTROL FINANCIERO</span><h2>Cobranzas y caja</h2></div><span class="muted">Ejemplo al 10/10/2026 · soles</span></div>
           <div class="panel"><div class="panel-header"><div><h3>Anticipa tus necesidades de efectivo</h3><p>Ventas, cobros y caja son conceptos distintos. Los cobros y compromisos de esta vista son simulados.</p></div></div>
